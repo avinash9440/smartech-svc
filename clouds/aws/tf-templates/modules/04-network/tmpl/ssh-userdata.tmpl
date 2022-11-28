@@ -1,0 +1,54 @@
+#!/bin/bash
+#/*
+# * File: ssh-userdata.tmpl
+# * Project: tmpl
+# * Created Date: Thursday July 4th 2019
+# * Author: Ashay Varun Chitnis
+# * -----
+# * Last Modified: Thursday July 4th 2019 7:02:37 pm
+# * Modified By: Ashay Varun Chitnis at <ashay.chitnis@gmail.com>
+# * -----
+# * Copyright (c) 2019 Ashay Chitnis, all rights reserved.
+# */
+
+
+
+
+set -x
+set -e
+exec &> >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+
+# Updates 
+yum update -y
+yum install awscli cron -y
+
+# Set timezone to Asia/Kolkata
+rm -f /etc/localtime
+ln -s /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
+
+# Cron config
+aws --region ${devops_bucket_region} s3 cp s3://${devops_bucket}/aws/svc/openssh/script/backup_s3_devops.sh /usr/local/bin/backup_s3_devops.sh
+chmod +x /usr/local/bin/backup_s3_devops.sh
+echo "30 22 * * * DEVOPS_BUCKET=${devops_bucket} DEVOPS_BUCKET_BKUP=${devops_bucket_bkup} DEVOPS_REGION=${devops_bucket_region} DEVOPS_BKUP_REGION=${devops_bucket_bkup_region} /usr/local/bin/backup_s3_devops.sh 2>&1 > /var/log/devops-sync.log" |crontab -
+systemctl restart crond
+crontab -l
+
+# Retrieve Instance ID
+INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+
+# Associate EIP to NAT ENI within EC2 instance
+aws --region ${aws_region} ec2 associate-address --instance-id $INSTANCE_ID --allocation-id ${allocation_id}
+
+# Download ec2-user's authorized_users file from s3
+AUTH_FILE=/home/ec2-user/.ssh/authorized_keys2
+TMP_AUTH_FILE=$(mktemp)
+aws --region ${devops_bucket_region} s3 cp s3://${devops_bucket}/aws/svc/openssh/ec2-user/authorized_keys $TMP_AUTH_FILE
+cp -av $AUTH_FILE $AUTH_FILE.`date +%F-%H-%M-%S`
+mv -vf $TMP_AUTH_FILE $AUTH_FILE
+chmod 600 $AUTH_FILE
+chown ec2-user:ec2-user $AUTH_FILE
+
+# Change unlimited credit option to limited/standard
+aws --region ${aws_region} ec2 modify-instance-credit-specification --instance-credit-specification "InstanceId=$INSTANCE_ID,CpuCredits=standard"
+
+echo "Userdata execution complete"

@@ -1,0 +1,52 @@
+#!/bin/bash
+#/*
+# * File: nat-userdata.tmpl
+# * Project: tmpl
+# * Created Date: Friday June 28th 2019
+# * Author: Ashay Varun Chitnis
+# * -----
+# * Last Modified: Friday June 28th 2019 2:41:00 am
+# * Modified By: Ashay Varun Chitnis at <ashay.chitnis@gmail.com>
+# * -----
+# * Copyright (c) 2019 Ashay Chitnis, all rights reserved.
+# */
+
+
+
+
+set -x
+set -e
+exec &> >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+
+# Updates 
+yum update -y
+yum update -y aws-cli
+
+# Set timezone to Asia/Kolkata
+rm -f /etc/localtime
+ln -s /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
+
+# Retrieve Instance ID
+INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+
+# Disable source destination/checks
+aws --region ${aws_region} ec2 modify-instance-attribute --instance-id $INSTANCE_ID --no-source-dest-check
+
+# Attach Network Interface with EC2 instance
+aws --region ${aws_region} ec2 attach-network-interface --network-interface-id "${network_interface_id}" --instance-id "$INSTANCE_ID" --device-index 1
+
+# Change unlimited credit option to limited/standard
+aws --region ${aws_region} ec2 modify-instance-credit-specification --instance-credit-specification "InstanceId=$INSTANCE_ID,CpuCredits=standard"
+
+# Ensure traffic responds on eth1
+# ToDo Figure the ethernet device name eth1 -
+# - name from the private_ip \$\{private_ip\} ${private_ip} address
+
+/sbin/iptables -F
+/sbin/iptables -t nat -F
+/sbin/iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE
+
+ip route flush 0/0
+ip route add  default via ${gateway_ip} dev eth1
+
+echo "Userdata execution complete"

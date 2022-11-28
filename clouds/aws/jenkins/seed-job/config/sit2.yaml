@@ -1,0 +1,153 @@
+###  
+#  File: config.yaml
+#  Project: aws
+#  Created Date: Monday July 29th 2019
+#  Author: Ashay Varun Chitnis
+#  -----
+#  Last Modified: Monday July 29th 2019 1:12:05 am
+#  Modified By: Ashay Varun Chitnis at <ashay.chitnis@gmail.com>
+#  -----
+#  Copyright (c) 2019 Ashay Chitnis, all rights reserved.
+###  
+
+
+
+
+---
+
+sit2:
+  devops_bucket: smartech-devops
+  deploy_bucket: smartech-deploy
+  devops_bucket_region: ap-south-1
+  deploy_bucket_region: ap-south-1
+  tf_version: '0.12.19'
+  infra:
+    git_url: 'https://corporate.netcore.co.in/gitbucket/git/Iac/smartech-svc.git'
+    credentials_id: https-deployer-user-cred
+    git_branch: master
+    jenkins_file: 'clouds/aws/jenkins/seed-job/pipeline/infra.jenkinsfile'
+    tf_module:
+      kms:
+        tf_folder: 'submodule/security/clouds/aws/tf-templates/'
+      iam:
+        tf_folder: 'submodule/security/clouds/aws/tf-templates/'
+      network:
+        tf_folder: 'submodule/networking/clouds/aws/tf-templates/'
+      s3:
+        tf_folder: 'submodule/databases/clouds/aws/tf-templates/'
+      zookeeper:
+        tf_folder: 'submodule/databases/clouds/aws/tf-templates/'
+      mysql:
+        tf_folder: 'submodule/databases/clouds/aws/tf-templates/'
+      redis:
+        tf_folder: 'submodule/databases/clouds/aws/tf-templates/'
+      cassandra:
+        tf_folder: 'submodule/databases/clouds/aws/tf-templates/'
+      mongo:
+        tf_folder: 'submodule/databases/clouds/aws/tf-templates/'
+      vertica:
+        tf_folder: 'submodule/databases/clouds/aws/tf-templates/'
+      kafka:
+        tf_folder: 'submodule/databases/clouds/aws/tf-templates/'
+      compute-alb:
+        tf_folder: 'submodule/compute-01/clouds/aws/tf-templates/'
+      compute-app:
+        tf_folder: 'submodule/compute-01/clouds/aws/tf-templates/'
+      compute-ceaf:
+        tf_folder: 'submodule/compute-01/clouds/aws/tf-templates/'
+      compute-ut:
+        tf_folder: 'submodule/compute-01/clouds/aws/tf-templates/'
+      compute-papi:
+        tf_folder: 'submodule/compute-01/clouds/aws/tf-templates/'
+  provision:
+    git_url: 'https://corporate.netcore.co.in/gitbucket/git/Iac/smartech-infra-playbook.git'
+    credentials_id: https-deployer-user-cred
+    git_branch: master
+
+  app_config:
+
+    jenkins_file: 'clouds/aws/jenkins/seed-job/pipeline/app.jenkinsfile'
+    git_url: 'https://corporate.netcore.co.in/gitbucket/git/Iac/smartech-svc.git'
+    credentials_id: https-deployer-user-cred
+    git_branch: master
+    common_tag: 'sit2-featureName-1.12.2'
+
+    tf_module:
+      compute-app:
+          - 
+            ec2_tag: smartech-app
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/smartech.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: core
+            wrapper_dir: deployer
+            force_build: false
+            # app_port: 80
+
+      compute-ceaf:    
+          - 
+            ec2_tag: event-logger
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/p1logger.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            # app_port: 8080
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: target
+              build_dir: '.'
+              build_args: ''
+          - 
+            ec2_tag: event-import
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/p1logger.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            # app_port: 8080        
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile_import.build'
+              artifact_dir: target
+              build_dir: '.'
+              build_args: ''
+
+      compute-papi:
+          - 
+            ec2_tag: activity-papi
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/Activity_PAPI.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            # app_port: 80
+
+          - 
+            ec2_tag: papi-ui
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/papi_ui.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            # app_port: 80
+
+      compute-ut:
+          -
+            ec2_tag: link-tracker
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/gotracking.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            # app_port: 80

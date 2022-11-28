@@ -1,0 +1,365 @@
+/*
+ * File: app.jenkinsfile
+ * Project: pipeline
+ * Created Date: Friday August 9th 2019
+ * Author: Ashay Varun Chitnis
+ * -----
+ * Last Modified: Friday August 9th 2019 7:35:16 am
+ * Modified By: Ashay Varun Chitnis at <ashay.chitnis@gmail.com>
+ * -----
+ * Copyright (c) 2019 Ashay Chitnis, all rights reserved.
+ */
+
+
+
+
+def tfPlanFiles = []
+def tfModules = appModules.split(',')
+def tfDockerImage = "registry.hub.docker.com/hashicorp/terraform:${tfVersion}"
+def tfDockerArgs = "-u root:root --entrypoint=''"
+def applyChange = 0
+def configFile = "clouds/aws/jenkins/seed-job/config/${sitEnv}.yaml"
+def moduleConfig = [:]
+def processModules = [:]
+
+println """
+Received following Terraform Modules to act on: ${tfModules}
+Using Docker Image: ${tfDockerImage}
+"""
+
+node(sitEnv) {
+
+    def loadConfig = { confFile ->
+        // load YAML data afresh for a given env
+        Map config = [:]
+        
+        try {
+            config = readYaml file: confFile
+            // println(config)
+        }
+        catch (any) {
+            println("Error loading configuration file: ${any}")
+            return config
+        }
+        return config
+    }
+
+    def buildDockerImage = { app, conf, commitId, hostArtifactDir ->
+
+        Map dockerConf =conf['docker']
+        def dockerFile = dockerConf['dockerfile']
+        def dockerLabel = "${app}:${commitId}"
+        def buildDockerArgs = "--build-arg ARTIFACT_DIR=${dockerConf['artifact_dir']} --build-arg APP_NAME=${app} ${dockerConf['build_args']}"
+       
+        sh """
+        # cleanup host dir
+        rm -rvf ${hostArtifactDir}/*
+        
+        # docker build, create, cp and rm
+        docker build -t ${dockerLabel} -f ${dockerFile} ${buildDockerArgs} ${dockerConf['build_dir']}
+        CONT_ID=\$(docker create ${dockerLabel})
+        docker cp \$CONT_ID:/${app}/${dockerConf['artifact_dir']} ${hostArtifactDir}
+        docker rm -f \$CONT_ID
+
+        """
+        return true
+    }
+
+ 
+    def buildDockerBaseImage = { app, conf, commitId ->
+
+        Map dockerConf =conf['base_image']
+        def dockerFile = dockerConf['dockerfile']
+        def buildDockerArgs = dockerConf['build_args']
+        def dockerLabel = "${app}:base-image"
+
+        imagePresent = sh(returnStdout: true, script: "docker images ${dockerLabel} |wc -l").trim()
+        
+        echo "Got imagePresent :${imagePresent}:, force_flag :${dockerConf['force_build']}:"
+
+        if (dockerConf['force_build'] || (imagePresent == '1') ) {
+            sh """
+            docker build -t ${dockerLabel} -f ${dockerFile} ${buildDockerArgs} ${dockerConf['build_dir']}
+            """
+        }
+        return true
+    }   
+    
+    dir('infra') {
+        def workspace = pwd()
+
+        // ToDo: Add logic to look at POST Data and parse the triggering tag 
+        //       Compare the triggering tag to verify against the current sit env
+        //       if tag is for current sit env then proceed. Else exit
+
+        
+        checkout(scm)
+        Map config = loadConfig(workspace + '/' + configFile)
+        if (!config){
+            throw new Exception("Empty config map, file: ${configFile}")
+            return false
+        }
+
+        def configErr = false
+        def configErrModules = []
+        moduleConfig = config[sitEnv]['app_config']['tf_module']
+
+        tfModules.each { module ->
+            def isModulePresent = module in moduleConfig.keySet()
+            if (! isModulePresent) {
+                configErr = true
+                configErrModules << module
+            }            
+        }
+
+        if (configErr) {
+            throw new Exception("YAML config apps missing: ${configErrModules}")
+            return false
+        }
+    }
+
+    try {
+        stage ('Group TF modules to process') {
+            echo "====++++Env: ${sitEnv} Group TF modules to process++++===="
+            tfModules.each { module ->
+                echo "<<<<<<<<<<<<<<<${module} >>>>>>>>>>>>>>>>> ${moduleConfig[module]}"
+                processModules[module] = moduleConfig[module]
+            }
+            echo "====++++Env: ${sitEnv} Group TF modules to process++++===="
+        }
+        processModules.each { module, appConfigs ->
+
+            def commitId = [:]
+
+            if (infraAction == 'create_or_update') {
+                stage('Build phase Started') {
+                    echo "====++++Env: ${sitEnv} Build phase Started++++===="
+                    echo "=="
+                    echo "=="
+                    echo "=="
+                    echo "=="
+                    echo "=="
+                }
+
+                appConfigs.each { conf ->
+
+                    echo "Received >>>>>> ${conf}"
+                    def app = conf['ec2_tag']
+                    dir(app) {
+                        def artifactFile = ''
+                        def verifyArtifact = 1 // bash exit status: 1 is false 0 is true
+
+                        stage("Application ${app}: Clone application repo") {
+                            println("App Config for ${app}: ${conf}")
+                            echo "====++++Env: ${sitEnv} Cloning app ${app} repo++++===="
+                            def pull_ref = conf['git_branch']
+                            // ToDo: Enable once all in place
+                            if (conf['app_type'] == 'core') {
+                                pull_ref = commonTag
+                            }
+                            echo "Setting Git pull_ref to ${pull_ref}"
+
+                            def appSCM = [
+                                $class: 'GitSCM',
+                                userRemoteConfigs: [
+                                    [
+                                        credentialsId: conf['credentials_id'],
+                                        url: conf['git_url']
+                                    ]
+                                ],
+                                branches: [
+                                    [
+                                        name: pull_ref // branch or common git tag
+                                    ]
+                                ],
+                                submoduleCfg:[],
+                                extensions: [
+                                    [
+                                        $class: 'SubmoduleOption',
+                                        disableSubmodules: false,
+                                        parentCredentials: true,
+                                        recursiveSubmodules: true,
+                                        reference: '',
+                                        timeout: 60,
+                                        trackingSubmodules: true
+                                    ]
+                                ],
+                                doGenerateSubmoduleConfigurations: false,
+                            ]
+                            checkout(appSCM)
+                            commitId[app] = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+
+                            echo "====++++Env: ${sitEnv} Cloning app ${app} repo completed++++===="
+                        }
+                        
+                        stage('Verify Artifact On S3') {
+                            def cmd = "aws --region ${deployBucketRegion} s3 ls s3://${deployBucket}/${commitId[app]}/${app}/${app}.tar.gz"
+                            verifyArtifact = sh(returnStatus: true, script: cmd)
+                            echo """
+                                    App ${app}:
+                                    verifyArtifact is: ${verifyArtifact},
+                                    force_build is : ${conf['force_build']} 
+                                    only proceeding for app build if 
+                                    verifyArtifact is 1 or force_build is true
+                                """
+                        }
+                        
+                        // Build artifact only if 
+                        // 1) artifact has never been built or
+                        // 2) force_build attribute for app is true
+                        
+                        if (verifyArtifact == 1 || conf['force_build'] == true) {
+
+                            stage("Application ${app}: Building the compiled application") {
+                                echo "====++++Env: ${sitEnv} Build phase started++++===="
+
+                                def hostArtifactDir = "/var/tmp/${app}/${commitId[app]}"
+                                artifactFile = "${hostArtifactDir}/${app}.tar.gz"
+                                sh "mkdir -p ${hostArtifactDir}"
+                                
+                                if (conf['lang_type'] == 'compiled') {
+                                    if (! buildDockerImage(app, conf, commitId[app], hostArtifactDir)) {
+                                        return false
+                                    }
+                                    
+                                    // Only copy pre/post install scripts for "compiled" lang_type.
+                                    // "scripted" pre/post install scripts are archived with git below.
+
+                                    sh """
+                                    #!/bin/bash
+                                    set -e
+                                    cp -av ${conf['wrapper_dir']} ${hostArtifactDir}/
+                                    cd ${hostArtifactDir}
+                                    tar cvzf ${artifactFile} *
+                                    """
+                                }
+                                else {
+                                    sh """
+                                    git submodule update --init || echo "No Submodule detected."
+                                    git submodule update --remote || echo "No Submodule detected."
+                                    git checkout ${commitId[app]}
+                                    tar cvzf ${artifactFile} .  --exclude .git
+                                    """
+                                }
+
+                                echo "====++++Env: ${sitEnv} Build phase completed++++===="
+                            }
+
+                            stage("Application ${app}: Create artifact and save to S3") {
+                                echo "====++++Env: ${sitEnv} Copy deployment package to s3++++===="
+                                sh "aws --region ${deployBucketRegion} s3 cp ${artifactFile} s3://${deployBucket}/${commitId[app]}/${app}/"
+                                echo "====++++Env: ${sitEnv} Copy artifact to s3 completed++++===="
+                            }
+                        }
+                    }
+                }
+
+                stage('Build phase complete') {
+                    echo "====++++Env: ${sitEnv} Build phase complete++++===="
+                    echo "=="
+                    echo "=="
+                    echo "=="
+                    echo "=="
+                    echo "=="
+                    echo "====++++Env: ${sitEnv} Deployment phase started++++===="
+                }
+            }
+            dir('infra') {
+
+                def tfVarSuffix = ''
+                if (infraAction == 'create_or_update') {
+                    tfVarSuffix = '{'
+
+                    appConfigs.each { conf ->
+                        def app = conf['ec2_tag']
+
+                        // replace ec2_tag to have underscore instead of hyphen
+                        //def appSuffix = app.replaceAll('-', '_')
+                        tfVarSuffix += "\"${app}\": \"${commitId[app]}\","
+                    }
+
+                    // remove trailing comma
+                    tfVarSuffix = tfVarSuffix.substring(0, tfVarSuffix.length() - 1)                
+                    tfVarSuffix += '}'
+                }
+
+                echo "Received >>>>>>> ${tfVarSuffix}"
+
+                stage("Module ${module}: Approve action: ${infraAction} deployment to AWS?") {
+                    echo "====++++Env: ${sitEnv} Approve deployment of ${module}++++===="
+                    if (skipInput == 'false') {
+                        input "Do you want to deploy/destroy module: ${module} to ${sitEnv} env?"
+                        //input "Deploy ${module} with plan file ${tfPlanFiles[index]} to Env ${sitEnv}?"
+                    }
+                    else {
+                        echo """
+                                skipInput set to true.
+                                Seems like mostly a webhook job trigger.
+                                Going ahead with apply without user input prompt/approval.
+                             """
+                    }
+                    echo "====++++Env: ${sitEnv} Approve action: ${infraAction} deployment of ${module} complete++++===="
+                }
+
+                stage("Module ${module}: Deploy artifact to EC2") {
+                    if (compileOnly == 'false') {
+                        echo "====++++Env: ${sitEnv} Deploy artifact for ${module} started ++++===="
+                        
+                        // Treating activeChoiceParam type as a simple string param type
+                        // acc. to similar treatment with a choiceParam type below
+                        // https://stackoverflow.com/questions/41759405/jenkins-choice-parameter-passing-to-a-pipeline-job
+
+
+                        build (
+                            job: "${sitEnv}-aws-infra-deployer",
+                            parameters: [
+                                string(name: 'infraModules', value: module),
+                                string(name: 'infraAction', value: infraAction),
+                                // string(name: 'tfPlanArgs', value: "-var '${tfAppVarSuffix}_git_sha=${commitId[app]}'"),
+                                string(name: 'tfPlanArgs', value: tfVarSuffix),
+                                booleanParam(name: 'skipInput', value: true),
+                            ]
+                        )
+                        echo "====++++Env: ${sitEnv} Deploy artifact for ${module} complete ++++===="
+                    }
+                }                            
+            }
+
+            stage('Deployment phase complete') {
+                echo "=="
+                echo "=="
+                echo "=="
+                echo "=="
+                echo "=="
+                echo "====++++Env: ${sitEnv} Deployment phase started++++===="
+            }
+        }
+    }
+    catch (Exception exc) {
+        echo (exc.getMessage())
+        echo 'Something failed!'
+    }
+    finally {
+        echo 'Deployment finished with next result: '
+        switch (currentBuild.result) {
+            case 'ABORTED':
+                echo ' ABORTED!'
+                break
+            case 'SUCCESS':
+                echo ' SUCCESSFULY!'
+                break
+            case 'FAILURE':
+                echo ' with FAILURE!'
+                break
+            case 'UNSTABLE':
+                echo ' UNSTABLE'
+                break
+            case 'NOT_BUILT':
+                echo ' NOT BUILT'
+                break
+            default:
+                echo "Got unkown result status ${currentBuild.result}"
+                break
+        }
+    }
+}

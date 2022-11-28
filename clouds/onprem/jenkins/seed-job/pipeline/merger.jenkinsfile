@@ -1,0 +1,184 @@
+/*
+ * File: application.jenkinsfile
+ * Project: pipeline
+ * Created Date: Saturday June 27th 2020
+ * Author: Ashay Varun Chitnis
+ * -----
+ * Last Modified: Saturday June 27th 2020 12:55:13 pm
+ * Modified By: Ashay Varun Chitnis at <ashay.chitnis@gmail.com>
+ * -----
+ * Copyright (c) 2020 Ashay Chitnis, all rights reserved.
+ */
+
+
+
+
+// def deployBucket
+// def deployBucketRegion
+// def scm
+// def app
+// def gitBranch
+// def commonTag
+
+def applyChange = 0
+def configFile = "infra/clouds/onprem/jenkins/seed-job/config/dev0.yaml"
+def moduleConfig = [:]
+def processModules = [:]
+def printMsg = { msgText ->
+    println("Msg: ${msgText}")
+    return 0
+}
+
+def printErr = { errText ->
+    System.err.&println(errText + "... Exiting!")
+    return 0
+}
+
+def notifyTeams = { medium, team ->
+    return 0
+}
+
+def flockMsg = { msg, flock_url ->
+    def data = '{"text": "' + msg + '. Refer: ' + env.BUILD_URL + 'console"}'
+    resp = httpRequest(url: flock_url, contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: data)
+    println("Flock Status: "+resp.status)
+}
+
+def stageMsgHook = { msg, conf ->
+    echo (msg)
+    flockMsg(msg, conf['notification']['flock_url'])
+}
+
+def loadConfig = { confFile ->
+    // load YAML data afresh for a given env
+    Map config = [:]
+    
+    try {
+        config = readYaml file: confFile
+        // println(config)
+    }
+    catch (any) {
+        println("Error loading configuration file: ${any}")
+        return config
+    }
+    return config
+}
+
+
+node(){
+
+    def workspace = pwd()
+    def conf = [:]
+    
+    // check tag
+
+    dir('infra') {
+        // checkout scm
+        checkout(scm)
+
+        // load config file
+        Map config = loadConfig(workspace + '/' + configFile)
+        if (!config){
+            throw new Exception("Empty config map, file: ${configFile}")
+            return false
+        }
+
+        def configErr = false
+        def configErrModules = []
+
+        moduleConfig = config['build_deploy_config']['app_module']
+        // commonTag = config['build_deploy_config']['tagPattern']
+
+
+        def isModulePresent = app in moduleConfig.keySet()
+        if (! isModulePresent) {
+            throw new Exception("YAML config apps missing: ${configErrModules}")
+            return false
+        }
+        conf = config['build_deploy_config']['app_module'][app]
+        conf['tag_pattern'] = config['build_deploy_config']['tag_pattern']
+        conf['vault_credential_id'] = config['build_deploy_config']['vault_credential_id']
+    }
+    
+    def commitId = ''
+    // start build stages
+    try {
+        dir(app) {
+
+            // stage("App ${}: Set up Git credential caching"){
+            //     sh 'git config --global credential.helper cache'
+            //     sh 'git config --global push.default simple'
+            // }
+
+            stage("App ${app}: Clone App repo"){
+                println("App Config for ${app}: ${conf}")
+                stageMsgHook("====++++ Cloning app ${app} repo++++====", conf)
+                def pull_ref = gitBranch
+
+                // ToDo: Enable once all in place
+
+                pull_ref = gitBranch
+                echo "Setting Git pull_ref to ${gitBranch}"
+
+                def appSCM = [
+                    $class: 'GitSCM',
+                    userRemoteConfigs: [
+                        [
+                            credentialsId: conf['credentials_id'],
+                            url: conf['git_url']
+                        ]
+                    ],
+                    submoduleCfg:[],
+                    extensions: [
+                        [
+                            $class: 'SubmoduleOption',
+                            disableSubmodules: false,
+                            parentCredentials: true,
+                            recursiveSubmodules: true,
+                            reference: '',
+                            timeout: 60,
+                            trackingSubmodules: true
+                        ]
+                    ],
+                    doGenerateSubmoduleConfigurations: false,
+                ]
+                checkout(appSCM)
+                commitId = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+
+                stageMsgHook("====++++Env: Cloning app ${app} repo completed++++====", conf)
+            }
+
+            stage("Application ${app}: Try git merge") {
+                stageMsgHook("====++++Env: Git Merge phase started++++====", conf)
+
+                withCredentials([usernamePassword(credentialsId: conf['credentials_id'], passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                    testUser = GIT_USERNAME
+                    testPass = GIT_PASSWORD
+                    sh """
+                    #!/bin/bash
+                    set -x
+                    set -e
+
+                    tempBranch=temp-`head /dev/urandom | tr -dc A-Za-z0-9 | head -c 13 ; echo ''`
+
+                    git checkout ${gitBranch}
+                    git checkout ${tagName}
+                    git checkout -b \$tempBranch
+                    git merge ${gitBranch}
+                    
+                    git checkout ${gitBranch}
+                    git merge \$tempBranch
+                    git push https://${GIT_USERNAME}:${GIT_PASSWORD}@${conf['git_server']}/gitbucket/git/${conf['git_owner']}/${conf['git_repo_name']}.git refs/heads/${gitBranch}
+                    git branch -d \$tempBranch
+                    """
+                }
+                stageMsgHook("====++++Env: Git Merge phase complete++++====", conf)
+            }
+        }
+    }
+    catch (Exception exc) {
+        stageMsgHook("Job failure: Something failed " + exc, conf)
+        echo 'Something failed during build!'
+        throw new Exception("Job failure: Something failed " + exc)
+    }
+}

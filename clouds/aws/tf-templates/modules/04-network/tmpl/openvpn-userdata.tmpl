@@ -1,0 +1,66 @@
+#!/bin/bash
+#/*
+# * File: openvpn-userdata.tmpl
+# * Project: tmpl
+# * Created Date: Saturday June 29th 2019
+# * Author: Ashay Varun Chitnis
+# * -----
+# * Last Modified: Saturday June 29th 2019 7:41:24 am
+# * Modified By: Ashay Varun Chitnis at <ashay.chitnis@gmail.com>
+# * -----
+# * Copyright (c) 2019 Ashay Chitnis, all rights reserved.
+# */
+
+
+
+set -x
+set -e
+exec &> >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+
+# Updates 
+export DEBIAN_FRONTEND=noninteractive
+apt update -y
+apt install -y python3-pip
+
+# Set timezone to Asia/Kolkata
+rm -f /etc/localtime
+ln -s /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
+
+# Update awscli
+pip3 install awscli boto3 --upgrade
+
+# Retrieve Instance ID
+INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+
+service openvpnas stop
+
+cp -av /usr/local/openvpn_as/etc/ /usr/local/openvpn_as/etc.orig
+
+cd /usr/local/openvpn_as/etc/
+
+aws --region ${aws_region} s3 sync s3://${devops_bucket}/aws/svc/openvpn/config/ . --delete
+
+chown openvpn_as:openvpn_as licenses
+
+aws --region ${aws_region} s3 cp s3://${devops_bucket}/aws/svc/openvpn/secret/access.sec.enc /tmp/access.sec.enc
+
+aws --region ${aws_region} kms decrypt --ciphertext-blob  fileb:///tmp/access.sec.enc --output text --query Plaintext | base64 --decode > /tmp/access.sec
+
+OVPN_PASS=$(cat /tmp/access.sec)
+
+rm -f /tmp/access.sec /tmp/access.sec.enc
+
+echo "openvpn:$OVPN_PASS" | chpasswd
+
+service openvpnas start
+
+# Retrieve Instance ID
+INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+
+# Attach EIP with EC2 instance
+aws --region ${aws_region} ec2 associate-address --instance-id $INSTANCE_ID --allocation-id ${allocation_id}
+
+# Change unlimited credit option to limited/standard
+aws --region ${aws_region} ec2 modify-instance-credit-specification --instance-credit-specification "InstanceId=$INSTANCE_ID,CpuCredits=standard"
+
+echo "Userdata execution complete"

@@ -1,0 +1,218 @@
+
+
+
+
+
+---
+
+devops_bucket: smartech-devops
+deploy_bucket: smartech-deploy
+devops_bucket_region: ap-south-1
+deploy_bucket_region: ap-south-1
+
+provision:
+  git_url: 'https://corporate.netcore.co.in/gitbucket/git/Iac/smartech-infra-playbook.git'
+  git_branch: onprem
+  credentials_id: 92ad4c55-46ac-4def-988e-7b494c12f402
+  jenkins_file: 
+    default: 'jenkins/pipeline/provision.jenkinsfile'
+    cloudfront: 'jenkins/pipeline/cloudfront_provision.jenkinsfile'
+  region: [all, us, india]
+
+build_deploy_config:
+  jenkins_file: 'clouds/onprem/jenkins/seed-job/pipeline/app.jenkinsfile'
+  merger_jenkins_file: 'clouds/onprem/jenkins/seed-job/pipeline/merger.jenkinsfile'
+  git_url: 'https://corporate.netcore.co.in/gitbucket/git/Iac/smartech-svc.git'
+  credentials_id: 92ad4c55-46ac-4def-988e-7b494c12f402
+  git_branch: master
+  tag_pattern: dev0-amans-
+  vault_credential_id: ansible-cicd
+
+  app_module:
+    smartech-app:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: smartech
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''    
+
+    smartech-angular:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: smartech-angular
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    smartech-elements:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: smartech-elements
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''    
+
+    smartech-cdn:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: smartech
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer-cdn
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer-cdn/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer-cdn/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer-cdn/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    smartech-lang:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: smartech
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer-lang
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer-lang/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer-lang/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer-lang/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    smartech-elements-ia2:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: smartech-elements-ia2
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''        
+###END OF FILE ####

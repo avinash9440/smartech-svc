@@ -1,0 +1,633 @@
+###  
+#  File: config.yaml
+#  Project: aws
+#  Created Date: Monday July 29th 2019
+#  Author: Ashay Varun Chitnis
+#  -----
+#  Last Modified: Monday July 29th 2019 1:12:05 am
+#  Modified By: Ashay Varun Chitnis at <ashay.chitnis@gmail.com>
+#  -----
+#  Copyright (c) 2019 Ashay Chitnis, all rights reserved.
+###  
+
+
+
+
+---
+
+prodeu:
+  devops_bucket: smartech-devops
+  deploy_bucket: smartech-deploy
+  devops_bucket_region: ap-south-1
+  deploy_bucket_region: ap-south-1
+  tf_version: '0.12.23'
+  infra:
+    git_url: 'https://corporate.netcore.co.in/gitbucket/git/Iac/smartech-svc.git'
+    credentials_id: https-deployer-user-cred
+    git_branch: master
+    jenkins_file: 'clouds/aws/jenkins/seed-job/pipeline/infra.jenkinsfile'
+    tf_proj:
+      security-prod:
+        tf_folder: 'submodule/security-prod/clouds/aws/tf-templates/'
+      networking-prod:
+        tf_folder: 'submodule/networking-prod/clouds/aws/tf-templates/'
+      databases-01-prod:
+        tf_folder: 'submodule/databases-01-prod//clouds/aws/tf-templates/'
+      databases-02-prod:
+        tf_folder: 'submodule/databases-02-prod/clouds/aws/tf-templates/'
+      compute-01-prod:
+        tf_folder: 'submodule/compute-01-prod/clouds/aws/tf-templates/'
+      compute-02-prod:
+        tf_folder: 'submodule/compute-02-prod/clouds/aws/tf-templates/'
+      
+    tf_module:
+      kms:
+        tf_folder: 'submodule/security-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      iam:
+        tf_folder: 'submodule/security-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      network-prod:
+        tf_folder: 'submodule/networking-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      s3:
+        tf_folder: 'submodule/databases-02-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      zookeeper:
+        tf_folder: 'submodule/databases-01-prod//clouds/aws/tf-templates/'
+        infra_mod: true
+      redis-cluster:
+        tf_folder: 'submodule/databases-01-prod//clouds/aws/tf-templates/'
+        infra_mod: true
+      fluentd:
+        tf_folder: 'submodule/databases-01-prod//clouds/aws/tf-templates/'
+        infra_mod: true
+      mysql:
+        tf_folder: 'submodule/databases-02-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      elk:
+        tf_folder: 'submodule/databases-02-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      clickhouse:
+        tf_folder: 'submodule/databases-01-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      aerospike:
+        tf_folder: 'submodule/databases-01-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      redis:
+        tf_folder: 'submodule/databases-02-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      cassandra:
+        tf_folder: 'submodule/databases-02-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      mongo-03:
+        tf_folder: 'submodule/databases-01-prod//clouds/aws/tf-templates/'
+        infra_mod: true
+      mongo:
+        tf_folder: 'submodule/databases-02-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      vertica:
+        tf_folder: 'submodule/databases-02-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      kafka:
+        tf_folder: 'submodule/databases-02-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      storm:
+        tf_folder: 'submodule/databases-02-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      spark:
+        tf_folder: 'submodule/databases-02-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      compute-alb:
+        tf_folder: 'submodule/compute-01-prod/clouds/aws/tf-templates/'
+        infra_mod: true
+      compute-app:
+        tf_folder: 'submodule/compute-01-prod/clouds/aws/tf-templates/'
+        infra_mod: false
+      compute-ceaf:
+        tf_folder: 'submodule/compute-01-prod/clouds/aws/tf-templates/'
+        infra_mod: false
+      compute-ut:
+        tf_folder: 'submodule/compute-01-prod/clouds/aws/tf-templates/'
+        infra_mod: false
+      compute-api:
+        tf_folder: 'submodule/compute-02-prod/clouds/aws/tf-templates/'
+        infra_mod: false
+      compute-papi:
+        tf_folder: 'submodule/compute-01-prod/clouds/aws/tf-templates/'
+        infra_mod: false
+      compute-ceaf-noalb:
+        tf_folder: 'submodule/compute-01-prod/clouds/aws/tf-templates/'
+        infra_mod: false
+      compute-journey-noalb:
+        tf_folder: 'submodule/compute-01-prod/clouds/aws/tf-templates/'
+        infra_mod: false
+      compute-journey:
+        tf_folder: 'submodule/compute-01-prod/clouds/aws/tf-templates/'
+        infra_mod: false
+  provision:
+    git_url: 'https://corporate.netcore.co.in/gitbucket/git/Iac/smartech-infra-playbook.git'
+    credentials_id: https-deployer-user-cred
+    git_branch: master
+
+  app_config:
+
+    jenkins_file: 'clouds/aws/jenkins/seed-job/pipeline/app.jenkinsfile'
+    git_url: 'https://corporate.netcore.co.in/gitbucket/git/Iac/smartech-svc.git'
+    credentials_id: https-deployer-user-cred
+    git_branch: master
+    common_tag: 'prodeu-featureName-1.12.0'
+
+    tf_module:
+      compute-app:
+          - 
+            ec2_tag: smartech-app
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/smartech.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: core
+            wrapper_dir: deployer
+            force_build: false
+            
+          - 
+            ec2_tag: remote-stm
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/remoteStm.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          - 
+            ec2_tag: smartech-angular
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/smartech-angular.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: dist
+              build_dir: '.'
+              build_args: '--build-arg APP_DEPLOY_URL=https://smartech-angular.eu-north-1.prodeu.netcoresmartech.com'
+          - 
+            ec2_tag: smartech-elements
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/smartech-elements.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: dist
+              build_dir: '.'
+              build_args: ''
+          - 
+            ec2_tag: webactivity-js
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/smartech-elements.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: dist
+              build_dir: '.'
+              build_args: ''
+          - 
+            ec2_tag: webactivity-script
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/webactivity_script.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          - 
+            ec2_tag: mongo-segmentation
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/Mongo-Segmentation.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false            
+          - 
+            ec2_tag: mmail-int
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/mmail/mmail-int.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          - 
+            ec2_tag: goget-dataset
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/GoGetDataset.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: dist
+              build_dir: '.'
+              build_args: ''
+          - 
+            ec2_tag: demo-panel
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/Monitoring_scripts/demoPanel.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false                          
+
+      compute-ceaf:    
+          - 
+            ec2_tag: event-logger
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/p1logger.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: target
+              build_dir: '.'
+              build_args: ''
+          - 
+            ec2_tag: event-import
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/p1logger.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile_import.build'
+              artifact_dir: target
+              build_dir: '.'
+              build_args: ''
+          - 
+            ec2_tag: summarizer
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/Summarizer.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: target
+              build_dir: '.'
+              build_args: ''
+          - 
+            ec2_tag: lsweb-app
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/LSWebApp.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: target
+              build_dir: '.'
+              build_args: ''
+          - 
+            ec2_tag: pnserver
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/PNServer.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: target
+              build_dir: '.'
+              build_args: ''
+          - 
+            ec2_tag: kafka-mongo-writer
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/kafkamongowriter.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: target
+              build_dir: '.'
+              build_args: ''
+          - 
+            ec2_tag: smartanalytics
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/smartanalytics.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: target
+              build_dir: '.'
+              build_args: '' 
+
+      compute-ceaf-noalb:
+          - 
+            ec2_tag: lsloader
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/LSLoader.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: target
+              build_dir: '.'
+              build_args: ''
+
+          - 
+            ec2_tag: app-inbox-msg-writer
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/app-inbox-msg-writer.git'
+            git_branch: SMT-7295-Common
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: target
+              build_dir: '.'
+              build_args: ''
+          - 
+            ec2_tag: maucalc
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/MAUCalc.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: target
+              build_dir: '.'
+              build_args: ''
+          - 
+            ec2_tag: pns-cert-rd
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/pns-certificate-refresh-daemon.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+
+      compute-papi:
+          - 
+            ec2_tag: activity-papi
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/Activity_PAPI.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          - 
+            ec2_tag: papi-ui
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/papi_ui.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+
+      compute-api:
+          - 
+            ec2_tag: jsonapi
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/JsonApi.git'
+            git_branch: SMT-7295-Common
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          - 
+            ec2_tag: offlineapi
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/OfflineApi.git'
+            git_branch: SMT-7295-Common
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          - 
+            ec2_tag: javaredisbridge
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/JavaRedisBridge.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+
+          - 
+            ec2_tag: pushamp
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/pushamp.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          - 
+            ec2_tag: gopushpq
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/gopushpq.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          - 
+            ec2_tag: smartech-migration
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/smartechMigration.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          - 
+            ec2_tag: mggenerator
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/mggenerator.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          - 
+            ec2_tag: vertica-writer
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/vertica_writer.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          - 
+            ec2_tag: csbdequeuer
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/csbDequeuer.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          - 
+            ec2_tag: winner-generation-new-ui-email
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/Winner-Generation-New-UI-Email.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+
+
+      compute-ut:
+          -
+            ec2_tag: link-tracker
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/gotracking.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: target
+              build_dir: '.'
+              build_args: '--build-arg SIT_ENV=prodeu'
+          -
+            ec2_tag: url-tracker
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/UrlTracker.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+
+      compute-journey:
+          -
+            ec2_tag: storm-pusher2
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/storm-pusher.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          -
+            ec2_tag: triggerware-http
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/Triggerware-HTTP.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false           
+          -
+            ec2_tag: tasd
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/tasd.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          -
+            ec2_tag: sss
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/sss.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          - 
+            ec2_tag: lp-actions
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/LPActions.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+          - 
+            ec2_tag: webhook
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/webhook.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: scripted
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+                        
+      compute-journey-noalb:
+          - 
+            ec2_tag: deferred-dequeuer
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/deferreddequeuer.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: target
+              build_dir: '.'
+              build_args: ''
+          - 
+            ec2_tag: deferred-publisher
+            git_url: 'https://corporate.netcore.co.in/gitbucket/git/productone/deferredpublisher.git'
+            git_branch: SMT-7295-AWS
+            credentials_id: https-deployer-user-cred
+            lang_type: compiled
+            app_type: peripheral
+            wrapper_dir: deployer
+            force_build: false
+            docker:
+              dockerfile: 'deployer/docker/Dockerfile.build'
+              artifact_dir: target
+              build_dir: '.'
+              build_args: ''
+

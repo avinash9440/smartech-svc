@@ -1,0 +1,343 @@
+/*
+ * File: application.jenkinsfile
+ * Project: pipeline
+ */
+
+
+
+
+// def sitEnv
+// def deployBucket
+// def deployBucketRegion
+// def scm
+// def app
+// def gitBranch
+// def commonTag
+
+
+def applyChange = 0
+def configFile = "infra/clouds/onprem/jenkins/seed-job/config/common-env.yaml"
+def moduleConfig = [:]
+def processModules = [:]
+def printMsg = { msgText ->
+    println("Msg: ${msgText}")
+    return 0
+}
+
+def printErr = { errText ->
+    System.err.&println(errText + "... Exiting!")
+    return 0
+}
+
+def notifyTeams = { medium, team ->
+    return 0
+}
+
+def flockMsg = { msg, flock_url ->
+    def data = '{"text": "' + msg + '. Refer: ' + env.BUILD_URL + 'console"}'
+    resp = httpRequest(url: flock_url, contentType: 'APPLICATION_JSON', httpMode: 'POST', requestBody: data)
+    println("Flock Status: "+resp.status)
+}
+
+def stageMsgHook = { msg, conf ->
+    echo (msg)
+//    flockMsg(msg, conf['notification']['flock_url'])
+}
+
+def loadConfig = { confFile ->
+    // load YAML data afresh for a given env
+    Map config = [:]
+    
+    try {
+        config = readYaml file: confFile
+        // println(config)
+    }
+    catch (any) {
+        println("Error loading configuration file: ${any}")
+        return config
+    }
+    return config
+}
+
+def buildDockerImage = { app, conf, commitId, hostArtifactDir ->
+
+    Map dockerConf =conf['build']
+    def dockerFile = dockerConf['dockerfile']
+    def dockerLabel = "${app}:${commitId}"
+    def buildDockerArgs = "--build-arg ARTIFACT_DIR=${dockerConf['artifact_dir']} --build-arg APP_NAME=${app} ${dockerConf['build_args']}"
+    
+    sh """
+    # cleanup host dir
+    export COMMIT_ID=$commitId
+    if [[ ${hostArtifactDir} != /var/tmp* ]]; then
+        echo "${hostArtifactDir} is not part of the /var/tmp directory structure"
+        exit 1
+    fi
+
+    
+    rm -rvf ${hostArtifactDir} && mkdir -p ${hostArtifactDir}
+
+    # docker build, create, cp and rm
+    # cp -pr /opt/.m2 .
+    docker build -t ${dockerLabel} -f ${dockerFile} ${buildDockerArgs} ${dockerConf['build_dir']}
+    CONT_ID=\$(docker create ${dockerLabel})
+    docker cp \$CONT_ID:/${app}/${dockerConf['artifact_dir']} ${hostArtifactDir}
+    docker rm -f \$CONT_ID
+
+    """
+    return true
+}
+
+// unit_test
+def buildDockerImageUT = { app, conf, commitId ->
+
+    Map dockerConf =conf['unit_test']
+    def dockerFile = dockerConf['dockerfile']
+    def buildDockerArgs = dockerConf['build_args']
+    def dockerLabel = "${app}-ut:${commitId}"
+    
+    sh """
+    docker build -t ${dockerLabel} -f ${dockerFile} ${buildDockerArgs} ${dockerConf['build_dir']}
+    """
+    return true
+}
+
+def buildDockerBaseImage = { app, conf, commitId ->
+
+    Map dockerConf =conf['base_image']
+    def dockerFile = dockerConf['dockerfile']
+    def buildDockerArgs = dockerConf['build_args']
+    def dockerLabel = "${app}:base-image"
+
+    imagePresent = sh(returnStdout: true, script: "docker images ${dockerLabel} |wc -l").trim()
+    
+    echo "Got imagePresent :${imagePresent}:, force_flag :${dockerConf['force_build']}:"
+
+    if (dockerConf['force_build'] || (imagePresent == '1') ) {
+        sh """
+        docker build -t ${dockerLabel} -f ${dockerFile} ${buildDockerArgs} ${dockerConf['build_dir']}
+        """
+    }
+    return true
+}
+
+node(){
+
+    def workspace = pwd()
+    def conf = [:]
+    
+    // check tag
+
+    dir('infra') {
+        // checkout scm
+        checkout(scm)
+
+        // load config file
+        Map config = loadConfig(workspace + '/' + configFile)
+        if (!config){
+            throw new Exception("Empty config map, file: ${configFile}")
+            return false
+        }
+
+        def configErr = false
+        def configErrModules = []
+
+        moduleConfig = config['build_deploy_config']['app_module']
+        // commonTag = config['build_deploy_config']['tagPattern']
+
+
+        def isModulePresent = app in moduleConfig.keySet()
+        if (! isModulePresent) {
+            throw new Exception("YAML config apps missing: ${configErrModules}")
+            return false
+        }
+        conf = config['build_deploy_config']['app_module'][app]
+        conf['tag_pattern'] = config['build_deploy_config']['tag_pattern']
+        conf['vault_credential_id'] = config['build_deploy_config']['vault_credential_id']
+    }
+    
+    def commitId = ''
+    // start build stages
+    try {
+        dir(app) {
+            
+            // build only for dev0
+            // if (sitEnv == 'dev0') {
+            stage("App ${app}: Clone App repo"){
+                println("App Config for ${app}: ${conf}")
+                stageMsgHook("====++++Env:  Cloning app ${app} repo++++====", conf)
+
+                def appSCM = [
+                    $class: 'GitSCM',
+                    userRemoteConfigs: [
+                        [
+                            credentialsId: conf['credentials_id'],
+                            url: "${conf['git']['server']}/${conf['git']['owner']}/${conf['git']['repo_name']}.git"
+                        ]
+                    ],
+                     branches: [
+                        [
+                            name: Branch_Name // branch or common git tag
+                        ]
+                    ],
+                    submoduleCfg:[],
+                    extensions: [
+                        [
+                            $class: 'SubmoduleOption',
+                            disableSubmodules: false,
+                            parentCredentials: true,
+                            recursiveSubmodules: true,
+                            reference: '',
+                            timeout: 60,
+                            trackingSubmodules: true
+                        ]
+                    ],
+                    doGenerateSubmoduleConfigurations: false,
+                ]
+                checkout(appSCM)
+                commitId = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                stageMsgHook("====++++Env:  Cloning app ${app} repo completed++++====", conf)
+            }
+
+            stage("Application ${app}: Build Base Image for application") {
+                stageMsgHook("====++++Env:  Build phase started++++====", conf)
+                if (! buildDockerBaseImage(app, conf, commitId)) {
+                    return false
+                }
+                stageMsgHook("====++++Env:  Build Base Image for application complete++++====", conf)
+            }
+
+            stage("Application ${app}: Unit Test the application") {
+                stageMsgHook("====++++Env:  Build phase started++++====", conf)
+                if (! buildDockerImageUT(app, conf, commitId)) {
+                    return false
+                }                
+                stageMsgHook("====++++Env:  Unit Test the application complete++++====", conf)
+            }
+
+            stage('App ${app}: Verify artifact is present in S3'){
+                def cmd = "aws --profile smartech --region ${deployBucketRegion} s3 ls s3://${deployBucket}/singleclick/${app}/${commitId}/${app}.tar.gz"
+                verifyArtifact = sh(returnStatus: true, script: cmd)
+                echo """
+                        App ${app}:
+                        verifyArtifact is: ${verifyArtifact},
+                        force_build is : ${conf['force_build']} 
+                        only proceeding for app build if 
+                        verifyArtifact is 1 or force_build is true
+                    """
+                sh "redis-cli -h 192.168.54.26 hset jenkinsbuilds_${currentbuildnumber} ${app} ${commitId}"
+                
+                stageMsgHook("====++++Env:  commit id pushed to redis ++++====", conf)
+            }
+            // Build artifact only if 
+            // 1) artifact has never been built or
+            // 2) force_build attribute for app is true
+            
+            if (verifyArtifact == 1 || conf['force_build'] == true) {
+                stage("Application ${app}: Building the compiled application") {
+                    stageMsgHook("====++++Env:  Build phase started++++====", conf)
+
+                    def hostArtifactDir = "/var/tmp/singleclick/${app}/${commitId}"
+                    artifactFile = "${hostArtifactDir}/${app}.tar.gz"
+                    sh "mkdir -p ${hostArtifactDir}"
+                    
+                    if (conf['lang_type'] == 'compiled') {
+                        if (! buildDockerImage(app, conf, commitId, hostArtifactDir)) {
+                            return false
+                        }
+                        
+                        // Only copy pre/post install scripts for "compiled" lang_type.
+                        // "scripted" pre/post install scripts are archived with git below.
+
+                        sh """
+                        #!/bin/bash
+                        set -e
+                        set -x                            
+                        echo "commit_id: ${commitId}" >  ${conf['wrapper_dir']}/git_details.txt
+                        echo "Branch_Name: ${Branch_Name}" >> ${conf['wrapper_dir']}/git_details.txt
+                        echo "currentbuildnumber: ${currentbuildnumber}" >> ${conf['wrapper_dir']}/git_details.txt
+                        cp -av ${conf['wrapper_dir']} ${hostArtifactDir}/
+                        cd ${hostArtifactDir}
+                        tar cvzf ${artifactFile} *
+                        """
+                    }
+                    else {
+                        sh """
+                            set -e                            
+                            set -x
+                            git submodule update --init || echo "No Submodule detected."
+                            git submodule update --remote || echo "No Submodule detected."
+                            git checkout ${commitId}
+                            echo "commit_id: ${commitId}" >  ${conf['wrapper_dir']}/git_details.txt
+                            echo "Branch_Name: ${Branch_Name}" >> ${conf['wrapper_dir']}/git_details.txt
+                            echo "currentbuildnumber: ${currentbuildnumber}" >> ${conf['wrapper_dir']}/git_details.txt
+                            tar --exclude='.git' -czvf ${artifactFile} .
+                        """
+
+                    }
+
+                    stageMsgHook("====++++Env:  Build phase completed++++====", conf)
+                }
+
+                stage("Application ${app}: Create artifact and save to S3") {
+                    stageMsgHook("====++++Env:  Copy deployment package to s3++++====", conf)
+                    sh "aws --profile smartech --region ${deployBucketRegion} s3 cp ${artifactFile} s3://${deployBucket}/singleclick/${app}/${commitId}/"
+                    stageMsgHook("====++++Env:  Copy artifact to s3 completed++++====", conf)
+                    sh "redis-cli -h 192.168.54.26 hset jenkinsbuilds_${currentbuildnumber} ${app} ${commitId}"
+                    stageMsgHook("====++++Env:  commit id pushed to redis ++++====", conf)
+
+                }                
+            }
+            // }
+            // else {
+            //     stage("Application ${app}: Get CommitId for non-build environments") {
+                    
+            //         // get first 8 chars of gitSHA
+            //         def shortCharCount = 7
+
+            //         def response = httpRequest authentication: conf['credentials_id'], 
+            //                                    url: "${conf['git']['server']}/${conf['git']['api']}/repos/${conf['git']['owner']}/${conf['git']['repo_name']}/commits/${gitTag}",
+            //                                    customHeaders: [[name: 'Accept', value: 'application/vnd.github.v3.sha']]
+
+            //         def respJSONObj =  readJSON text: response.content
+            //         // echo "Received resp obj: ${respJSONObj}"
+            //         commitId = respJSONObj.sha.substring(0, shortCharCount)
+            //         echo "Received commit id: ${commitId}"
+            //     }
+
+            //     stage('App ${app}: Verify artifact is present in S3'){
+            //         def cmd = "aws --profile smartech --region ${deployBucketRegion} s3 ls s3://${deployBucket}/${commitId}/${sitEnv}/${app}/${app}.tar.gz"
+            //         verifyArtifact = sh(returnStatus: true, script: cmd)
+            //     }
+
+            //     if (verifyArtifact == 1) {
+            //         echo """
+            //                 App ${app}:
+            //                 verifyArtifact is: ${verifyArtifact},
+            //                 The job cannot proceed as the artifact has not been built yet or pushed to s3.
+            //             """
+            //         currentBuild.result = 'FAILURE'
+            //         stageMsgHook("====++++Env: ${sitEnv} The job cannot proceed as the artifact has not been built yet or pushed to s3.====", conf)
+            //         return
+            //     }
+            //     else {
+            //         echo "Artifact found in s3, proceeding to deploy artifact."
+            //     }
+
+            // }
+
+        }
+    }
+    catch (Exception exc) {
+        stageMsgHook("Job failure: Something failed " + exc, conf)
+        echo 'Something failed during build!'
+        throw new Exception("Job failure: Something failed " + exc)
+    }
+            //echo "current build number: ${currentBuild.number}"
+            //echo "previous build number: ${currentBuild.previousBuild.getNumber()}"
+            //def causes = currentBuild.rawBuild.getCauses()
+            //echo "causes: ${causes}"
+            //def rebuildCause0 = currentBuild.rawBuild.getCause(com.sonyericsson.rebuild.RebuildCause)
+            //echo "rebuildCause0: ${rebuildCause0}"
+            //echo "rebuild up number: ${rebuildCause0.getUpstreamBuild()}"
+}

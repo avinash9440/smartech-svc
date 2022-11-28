@@ -1,0 +1,369 @@
+/*
+ * File: infra.jenkinsfile
+ * Project: pipeline
+ * Created Date: Thursday August 8th 2019
+ * Author: Ashay Varun Chitnis
+ * -----
+ * Last Modified: Thursday August 8th 2019 12:44:52 am
+ * Modified By: Ashay Varun Chitnis at <ashay.chitnis@gmail.com>
+ * -----
+ * Copyright (c) 2019 Ashay Chitnis, all rights reserved.
+ */
+
+
+
+def tfPlanFiles = [:]
+def infraFolder = "clouds/aws/tf-templates/"
+def modules = infraModules.split(',')
+def projs = infraProjs.split(',')
+def dockerImage = "registry.hub.docker.com/hashicorp/terraform:${tfVersion}"
+def dockerArgs = "-u root:root --entrypoint=''"
+def applyChange = 0
+def processModules = [:]
+def configFile = "clouds/aws/jenkins/seed-job/config/${sitEnv}.yaml"
+
+def getReverseList = { String[] inpList ->
+    newList = inpList.reverse()
+    println ("Got modules: ${inpList} : ${inpList.getClass()} :: ${newList} : ${newList.getClass()} ")
+    return newList
+}
+
+// if (modules.isEmpty()) {
+//     println "Received no module to act upon; setting module to simply kms to avoid"
+//     modules = ['kms']
+// }
+
+println """
+Received following projects to act on: ${projs}
+Received following modules to act on: ${modules}
+Found Infra Action as ${infraAction}
+Using Docker Image: ${dockerImage}
+"""
+
+            
+
+node(sitEnv) {
+    try {
+        docker.image(dockerImage).inside(dockerArgs) {
+            def loadConfig = { confFile ->
+                // load YAML data afresh for a given env
+                Map config = [:]
+                
+                try {
+                    config = readYaml file: confFile
+                    // println(config)
+                }
+                catch (any) {
+                    println("Error loading configuration file: ${any}")
+                    return config
+                }
+                return config
+            }
+
+            def workspace = pwd()
+            def isInfraProj = false
+
+            def getModuleGitSHAs = { module, tfPlanArgs ->            
+                def tfPlanArgsStr = ''
+                Map gitSHAs = readJSON (text: tfPlanArgs)
+                tfPlanArgsStr = ' -var '+ module+ '-git={'
+                gitSHAs.eachWithIndex { gitSHA, i ->
+                    // 'amis={ us-east-1 = "foo", us-west-2 = "bar" }'
+                    tfPlanArgsStr += gitSHA.key + '={' + 'generic_app_sha=\\"' + gitSHA.value + '\\"},'
+                }
+                tfPlanArgsStr += '}'
+                println tfPlanArgsStr
+                return tfPlanArgsStr
+            }
+            
+            stage('Terraform version') {
+                echo "====++++Env: ${sitEnv} Get terraform version++++===="
+                sh "terraform version"
+                echo "====++++Env: ${sitEnv} Terraform version displayed++++===="
+            }
+
+            stage('Configure git details') {
+                echo "====++++Env: ${sitEnv} Configure git details ++++===="
+
+                sh """
+                
+                apk add --update groff less python py-pip
+                pip install --upgrade awscli
+
+                ## Temp till netcore infra enables ...
+                ## ... DNS resolution for corporate.netcore.co.in
+
+                echo -e "192.168.2.236\tcorporate.netcore.co.in" >> /etc/hosts
+                mkdir -p ~/.ssh
+
+                aws --region ${devopsBucketRegion} s3 cp s3://${devopsBucket}/aws/svc/jenkins/enc/ec2-git-credentials.sh /tmp/ec2-git-credentials.sh.enc
+                aws --region ${devopsBucketRegion} kms decrypt --ciphertext-blob fileb:///tmp/ec2-git-credentials.sh.enc --output text --query Plaintext | base64 -d > /tmp/ec2-git-credentials.sh
+
+                source /tmp/ec2-git-credentials.sh
+                rm -vf /tmp/ec2-git-credentials.sh /tmp/ec2-git-credentials.sh.enc
+
+                echo -e "https://\$GIT_USER:\$GIT_PAT@192.168.2.236\nhttps://\$GIT_USER:\$GIT_PAT@corporate.netcore.co.in\n" >> ~/.git-credentials
+                chmod 600 ~/.git-credentials
+                git config --global credential.helper 'store --file ~/.git-credentials'
+                """
+
+                echo "====++++Env: ${sitEnv} Configure git details complete++++===="
+            }
+
+            stage('Download infrastructure code') {
+                echo "====++++Env: ${sitEnv} Checkout scm ++++===="
+                checkout scm
+                sh """
+                #!/usr/bin/env ash
+                ls -l
+                git submodule update --init --recursive
+                git submodule update --remote
+                """
+                echo "====++++Env: ${sitEnv} Checkout scm complete ++++===="
+            }
+            stage('Read environment config') {
+                Map config = loadConfig(workspace + '/' + configFile)
+                if (!config){
+                    throw new Exception("Empty config map, file: ${configFile}")
+                    return false
+                }
+                
+                def configErr = false
+                def configErrModules = []
+                def infraProj = []
+                echo "Received: ${isInfraProj}"
+                projConfig = config[sitEnv]['infra']['tf_proj']
+                moduleConfig = config[sitEnv]['infra']['tf_module']
+                echo "Received: ${modules} ${modules.size()} ${isInfraProj}"
+
+                if (infraModules == ""){
+                    isInfraProj = true
+                    projConfig.each { mod, prop ->
+                        // expects prop['tf_folder'] to be of format:
+                        // 'submodule/security/clouds/aws/tf-templates/'
+
+                        def ma = (prop['tf_folder'] =~ /^submodule\/(.+?)\/.*/ )
+                        infraProj << ma[0][1]
+                    }
+                    infraProj.unique()
+                    
+                    projs.each { proj ->
+                        def isModulePresent = proj in infraProj
+                        if (! isModulePresent) {
+                            configErr = true
+                            configErrModules << proj
+                        }
+                        processModules[proj] = projConfig[proj]
+                    }
+                }
+                else {
+                    modules.each { module ->
+                        def isModulePresent = module in moduleConfig.keySet()
+                        if (! isModulePresent) {
+                            configErr = true
+                            configErrModules << module
+                        }
+                        processModules[module] = moduleConfig[module]
+                    }
+                }
+
+                if (configErr) {
+                    //println "YAML config module missing or Compute application: ${configErrModules}"
+                    throw new Exception("YAML config module missing or Compute application: ${configErrModules}")
+                    //return false
+                }                
+            }
+
+// Create started
+            if (infraAction == 'create_or_update') {
+                processModules.each { module, infraConfig ->
+
+                    stage('Initailize terraform') {
+                        echo "====++++Env: ${sitEnv} Initializing terraform++++===="
+
+                        println("Got >>>>>>>>> ${infraConfig}")
+                        sh """
+                        #!/usr/bin/env ash
+                        cd ${workspace}/${infraConfig['tf_folder']}
+                        terraform init -no-color
+                        """
+                        echo "====++++Env: ${sitEnv} Terraform initialization complete++++===="
+                    }
+
+                    stage('Switch terraform workspace') {
+                        echo "====++++Env: ${sitEnv} Initializing terraform++++===="
+                        sh """
+                        #!/usr/bin/env ash
+                        cd ${workspace}/${infraConfig['tf_folder']}
+                        terraform workspace select ${sitEnv} || terraform workspace new ${sitEnv}
+                        """
+                        echo "====++++Env: ${sitEnv} Terraform initialization complete++++===="
+                    }
+
+                    stage('Terraform get updates') {
+                        echo "====++++Env: ${sitEnv} Executing terraform get updates++++===="
+
+                        sh """
+                        #!/usr/bin/env ash
+                        cd ${workspace}/${infraConfig['tf_folder']}
+                        terraform get -no-color --update
+                        """
+                        echo "====++++Env: ${sitEnv} Terraform get updates complete++++===="
+                    }
+
+                    stage("Terraform plan for ${module}") {
+                        echo "====++++Env: ${sitEnv} Executing terraform plan++++===="
+                        def tfPlanArgsStr = ''
+                        def planFile = sh (script: "mktemp -p /var/tmp/ sit-plan.${module}.XXXXXXXXXX",  returnStdout: true).trim();
+                        echo "Name of plan file is: ${planFile}"                        
+                        tfPlanFiles[module] = planFile
+                        
+                        // get app git SHAs in json for a tf module
+                        if (tfPlanArgs != "") {
+                            echo "Received >> ${tfPlanArgs}"
+                            tfPlanArgsStr = getModuleGitSHAs(module, tfPlanArgs)
+                        }
+
+                        def projScript = """
+                        #!/usr/bin/env ash
+                        cd ${workspace}/${infraConfig['tf_folder']}
+                        terraform plan -no-color -detailed-exitcode -out ${tfPlanFiles[module]} -var-file=vars/${sitEnv}.tfvars ${tfPlanArgsStr}
+                        """
+                        def moduleScript = """
+                        #!/usr/bin/env ash
+                        cd ${workspace}/${infraConfig['tf_folder']}
+                        terraform plan -no-color -detailed-exitcode -out ${tfPlanFiles[module]} -target=module.${module} -var-file=vars/${sitEnv}.tfvars ${tfPlanArgsStr}
+                        """
+
+                        if (isInfraProj)
+                            applyChange = sh (returnStatus: true, script: projScript)
+                        else 
+                            applyChange = sh (returnStatus: true, script: moduleScript)
+
+                        echo "====++++Env: ${sitEnv} Terraform plan complete++++===="
+                    }
+                    stage("Terraform apply plan for ${module}") {
+                        echo "Received applyChange as : ${applyChange}"
+                        switch (applyChange) {
+                            case 0:
+                                echo "Terraform Apply: No changes found. Skipping..."
+                                break
+                            case 1:
+                                echo "Terraform Apply: Error in plan. exiting..."
+                                sh "exit 1"
+                                break
+                            case 2:
+                                echo "====++++Env: ${sitEnv} Applying terraform plan++++===="
+                                echo "Debug: received skipInput: ${skipInput}"
+                                if (skipInput == 'false') {
+                                    input "Deploy ${module} with plan file ${tfPlanFiles[module]} to Env ${sitEnv}?"
+                                }
+                                else {
+                                    echo """
+                                            skipInput set to true.
+                                            Seems like an up-stream job trigger.
+                                            Going ahead with apply without user input prompt/approval.
+                                         """
+                                }
+                                sh """
+                                #!/usr/bin/env ash
+                                cd ${workspace}/${infraConfig['tf_folder']}
+                                echo applying changes...
+                                terraform apply -no-color ${tfPlanFiles[module]}
+                                """
+                                echo "====++++Env: ${sitEnv} Terraform apply complete++++===="
+                                break
+                            default:
+                                echo "Received unknow exit code for terraform plan: ${applyChange} exiting..."
+                                sh "exit 1"
+                        }
+                    }
+                }
+            }
+// Create complete
+
+// =======
+
+// Destroy started
+            if (infraAction == 'destroy') {
+                if (isInfraProj) {
+                    modules = projs
+                }
+
+                echo "Received Modules: ${modules.reverse()}"
+                modules.reverse().eachWithIndex { module, index ->
+                    stage("Terraform destroy for ${module}") {
+                        
+                        echo "====++++Env: ${sitEnv}: Module ${module} Executing terraform destroy++++===="                        
+                        
+                        def moduleDestroy = """
+                        #!/usr/bin/env ash
+                        cd ${workspace}/${processModules[module]['tf_folder']}
+                        terraform init -no-color
+                        terraform get -no-color --update
+                        terraform workspace select ${sitEnv} || terraform workspace new ${sitEnv}
+                        terraform refresh -no-color -var-file=vars/${sitEnv}.tfvars
+                        terraform destroy -no-color -auto-approve -target=module.${module} -var-file=vars/${sitEnv}.tfvars
+                        """
+                        def projDestroy = """
+                        #!/usr/bin/env ash                        
+                        cd ${workspace}/${processModules[module]['tf_folder']}
+                        terraform init -no-color
+                        terraform get -no-color --update
+                        terraform workspace select ${sitEnv} || terraform workspace new ${sitEnv}
+                        terraform refresh -no-color -var-file=vars/${sitEnv}.tfvars
+                        terraform destroy -no-color -auto-approve -var-file=vars/${sitEnv}.tfvars
+                        """
+                        
+                        if (skipInput == 'false') {
+                            input "Destroy ${module} for infra Env ${sitEnv}?"
+                        }
+                        else {
+                            echo """
+                                    skipInput set to true.
+                                    Seems like a up-stream job trigger.
+                                    Going ahead with destroy without user input.
+                                 """
+                        }
+                        
+                        if (isInfraProj) {
+                            sh projDestroy
+                        }
+                        else {
+                            sh moduleDestroy
+                        }
+                        
+                        echo "====++++Env: ${sitEnv} Module ${module} Terraform destroy complete++++===="
+                    }
+                }
+            }
+        }
+    }
+    catch (exc) {
+        echo 'Something failed!'
+        throw exc
+    }
+    finally {
+        echo 'Deployment finished with next result: '
+        switch (currentBuild.result) {
+            case 'ABORTED':
+                echo ' ABORTED!'
+                break
+            case 'SUCCESS':
+                echo ' SUCCESSFULY!'
+                break
+            case 'FAILURE':
+                echo ' with FAILURE!'
+                break
+            case 'UNSTABLE':
+                echo ' UNSTABLE'
+                break
+            case 'NOT_BUILT':
+                echo ' NOT BUILT'
+                break
+            default:
+                echo "Got unkown result status ${currentBuild.result}"
+                break
+        }
+    }
+}

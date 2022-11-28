@@ -1,0 +1,120 @@
+#!/bin/bash
+#/*
+# * File: worker-userdata.tmpl
+# * Project: tmpl
+# * Created Date: Thursday July 11th 2019
+# * Author: Ashay Varun Chitnis
+# * -----
+# * Last Modified: Thursday July 11th 2019 4:13:17 am
+# * Modified By: Ashay Varun Chitnis at <ashay.chitnis@gmail.com>
+# * -----
+# * Copyright (c) 2019 Ashay Chitnis, all rights reserved.
+# */
+
+
+
+# Exit on errors; check /var/log/user-data.log if errors
+set -x
+# set -e
+
+# exec &> >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+# Retrieve Instance ID
+export INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+
+# Change unlimited credit option to limited/standard
+aws --region ${aws_region} ec2 modify-instance-credit-specification --instance-credit-specification "InstanceId=$INSTANCE_ID,CpuCredits=standard"
+
+# set selinux to disabled
+setenforce 0
+sed -i s/^SELINUX=.*$/SELINUX=permissive/ /etc/selinux/config
+
+# yum install -y epel-release
+# yum update -y
+
+# Set timezone to Asia/Kolkata
+rm -f /etc/localtime
+ln -s /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
+
+# Jenkins worker config
+# yum install -y wget \
+#                java-1.8.0 \
+#                git \
+#                python2-pip \
+#                cron \
+#                docker \
+#                ansible
+
+# pip uninstall -y urllib3
+# yum remove -y python-urllib3
+# ldconfig
+# pip install --upgrade pip awscli boto3
+# ldconfig
+
+usermod -aG dockerroot centos
+cat > /etc/docker/daemon.json << DOCKER
+{
+    "live-restore": true,
+    "group": "dockerroot"
+}
+
+DOCKER
+systemctl restart docker
+systemctl enable docker
+
+aws --region ${aws_region} s3 cp s3://${devops_bucket}/aws/svc/jenkins/enc/jenkins-env-vars.sh.enc /tmp/jenkins-env-vars.sh.enc
+aws --region ${aws_region} kms decrypt --ciphertext-blob fileb:///tmp/jenkins-env-vars.sh.enc --output text --query Plaintext | base64 --decode > /tmp/jenkins-env-vars.sh
+source /tmp/jenkins-env-vars.sh
+rm -vf /tmp/jenkins-env-vars.sh /tmp/jenkins-env-vars.sh.enc
+
+export INSTANCE_NAME=$(curl -s 169.254.169.254/latest/meta-data/local-hostname)
+export INSTANCE_IP=$(curl -s 169.254.169.254/latest/meta-data/local-ipv4)
+export LAUNCH_TIMEOUT_SEC=60
+export MAX_RETRIES=3
+export RETRY_WAIT_SEC=15
+export NODE_FS="${home_dir}"
+export NUM_EXECUTORS="${executor_count}"
+export NODE_LABEL="${sit_env}"
+export JENKINS_CRUMB=$("curl -k -u  '$JENKINS_USERNAME:$JENKINS_API_TOKEN' '$JENKINS_URL/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,":",//crumb)")
+
+# Configure jenkins slave
+SLAVE_JSON_OBJECT=$(cat << JSONOBJ
+{"name": "${sit_env}-$INSTANCE_NAME", "nodeDescription": "${sit_env} worker node with hostname: $INSTANCE_NAME on Linux/${ssh_user} (Platform/sudo-user)", "numExecutors": "$NUM_EXECUTORS", "remoteFS": "${home_dir}", "labelString": "${sit_env}", "mode": "NORMAL", "": ["hudson.plugins.sshslaves.SSHLauncher", "hudson.slaves.RetentionStrategy$Always"], "launcher": {"stapler-class": "hudson.plugins.sshslaves.SSHLauncher", "\$class": "hudson.plugins.sshslaves.SSHLauncher", "host": "$INSTANCE_IP", "credentialsId": "${credentials_id}", "port": "${ssh_port}", "javaPath": "", "jvmOptions": "", "prefixStartSlaveCmd": "", "suffixStartSlaveCmd": "", "launchTimeoutSeconds": "", "maxNumRetries": "", "retryWaitTime": ""}, "retentionStrategy": {"stapler-class": "hudson.slaves.RetentionStrategy$Always", "\$class": "hudson.slaves.RetentionStrategy\$Always"}, "nodeProperties": {"stapler-class-bag": "true"}, "type": "hudson.slaves.DumbSlave", "crumb": "$JENKINS_CRUMB"}
+JSONOBJ
+)
+
+SLEEP_FOR_SEC=30
+
+while ! curl -k -L -s -u "$JENKINS_USERNAME:$JENKINS_API_TOKEN" -H "Content-Type:application/x-www-form-urlencoded" -H "$JENKINS_CRUMB" -X POST -d "json=$SLAVE_JSON_OBJECT" "$JENKINS_URL/computer/doCreateItem?name=${sit_env}-$INSTANCE_NAME&type=hudson.slaves.DumbSlave"
+do 
+    echo ""
+    echo ""
+    echo "curl failed. Trying again in $SLEEP_FOR_SEC seconds..." >&2
+    echo ""
+    echo ""
+    sleep $SLEEP_FOR_SEC
+
+done
+
+# Mongo client
+# aws --region ${aws_region} s3 cp s3://${devops_bucket}/aws/svc/mongod/repo/mongodb-org-3.4.repo /etc/yum.repos.d/mongodb-org-3.4.repo
+# yum update -y
+# yum install -y mongodb-org-shell
+
+# Copy id_rsa from s3
+# required for git access
+mkdir -p ${home_dir}/.ssh
+aws --region ${aws_region} s3 cp s3://${devops_bucket}/aws/svc/jenkins/ssh/id_rsa ${home_dir}/.ssh/
+aws --region ${aws_region} s3 cp s3://${devops_bucket}/aws/svc/jenkins/ssh/id_rsa.pub ${home_dir}/.ssh/
+chown ${ssh_user}:${ssh_group} ${home_dir}/.ssh -R
+chmod 700 ${home_dir}/.ssh
+chmod 600 ${home_dir}/.ssh/id_rsa
+
+# Disable strict host key checking in ansible
+sed -i '/#host_key_checking = False/c\host_key_checking = False' /etc/ansible/ansible.cfg
+
+# Temporary till DNS resolution corporate.netcore.co.in is fixed.
+# Cannot resolve corporate.netcore.co.in from 192.168.2.234 and 2.7
+echo -e "192.168.2.236\tcorporate.netcore.co.in" >> /etc/hosts
+
+touch /tmp/finished-user-data
+echo "Userdata execution complete"

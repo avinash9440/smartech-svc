@@ -1,0 +1,2422 @@
+###  
+#  File: prod.yaml
+#  Project: aws
+#  Created Date: Monday July 29th 2019
+#  Author: Ashay Varun Chitnis
+#  -----
+#  Last Modified: Monday July 29th 2019 1:12:05 am
+#  Modified By: Ashay Varun Chitnis at <ashay.chitnis@gmail.com>
+#  -----
+#  Copyright (c) 2019 Ashay Chitnis, all rights reserved.
+###  
+
+
+
+
+---
+
+devops_bucket: smartech-devops
+deploy_bucket: smartech-deploy
+devops_bucket_region: ap-south-1
+deploy_bucket_region: ap-south-1
+
+provision:
+  git_url: 'https://corporate.netcore.co.in/gitbucket/git/Iac/smartech-infra-playbook.git'
+  git_branch: onprem
+  credentials_id: 92ad4c55-46ac-4def-988e-7b494c12f402
+  jenkins_file: 
+    default: 'jenkins/pipeline/provision.jenkinsfile'
+    cloudfront: 'jenkins/pipeline/cloudfront_provision.jenkinsfile'
+  region: [all]
+
+build_deploy_config:
+  jenkins_file: 'clouds/onprem/jenkins/seed-job/pipeline/app.jenkinsfile'
+  merger_jenkins_file: 'clouds/onprem/jenkins/seed-job/pipeline/merger.jenkinsfile'
+  git_url: 'https://corporate.netcore.co.in/gitbucket/git/Iac/smartech-svc.git'
+  credentials_id: 92ad4c55-46ac-4def-988e-7b494c12f402
+  git_branch: master
+  tag_pattern: prod-
+  vault_credential_id: ansible-cicd
+  
+  app_module:
+    csbdequeuer:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: csbDequeuer
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: fa401864-ea5a-4fe3-bdb1-11b4086f28c7
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+# below module is a lambda deployment. 
+# don't take it a reference
+    golambdaaudienceselector:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: goLambdaAudienceSelector
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    redislambdaapi:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: redislambdaapi
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    businesstriggerapi:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: businesstriggerapi
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''    
+
+    get-vertica-users:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: get-vertica-users
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+ 
+    import-processor:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: import_processor
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: juBei1he
+      host_credential_id: 601706b2-7bc9-4e2b-b28b-a790135a0147
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    event-logger:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: p1logger
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: devadmin
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    smartech-app:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: smartech
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    smartech-angular:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: smartech-angular
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    smartech-elements:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: smartech-elements
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    jsonapi-dequeuer:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: jsonAPIDequeuer
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: ca4dfdd3-477a-4772-bc87-602f9ec72af6
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    gopushpq:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: gopushpq
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: true
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: true
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    analytics:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: analytics
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    itmd:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: itm
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: fa401864-ea5a-4fe3-bdb1-11b4086f28c7
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    activity-papi:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: Activity_PAPI
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    vertica-smartanalytics:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: vertica-smartanalytics
+        api: api/v3    
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 3bbf27da-c2d6-4710-b62e-0f94ba244bdb
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''   
+
+    user-path:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: user-path
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    service-discovery:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: service-discovery
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: fa401864-ea5a-4fe3-bdb1-11b4086f28c7
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    pnserver:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: PNServer
+        api: api/v3    
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+             
+    go-pnserver-fcm:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: go-pnserver-fcm
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: dc72f16b-e01f-4926-b41e-7ffb25aa1994
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''  
+
+    go-pnserver-ios:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: go-pnserver-ios
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: dc72f16b-e01f-4926-b41e-7ffb25aa1994
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+      
+    smartech-cdn:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: smartech
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer-cdn
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer-cdn/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer-cdn/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer-cdn/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    smartech-lang:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: smartech
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer-lang
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer-lang/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer-lang/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer-lang/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: '' 
+
+    sas-manager:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: goLambdaAudienceSelector
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer-manager
+      sudoer_username: root
+      connect_username: devops
+      host_credential_id: 8864f8a2-9097-4fa0-b18d-184f5a4e5a60
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer-manager/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer-manager/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer-manager/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''  
+
+    appinboxapi:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: APP_INBOX_API
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''  
+
+    app-inbox-msg-writer:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: app-inbox-msg-writer
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 1ee09f9e-41e2-4f28-aa77-cbdaff94b124
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+        
+    verticasummaryapi:
+        git:
+          server: https://gitlab.com/netcorecloud
+          branch: master
+          owner: cee
+          repo_name: vertica_summary_api
+          api: api/v3      
+        credentials_id: git-cred of venkateshemandi
+        lang_type: compiled
+        app_type: core
+        wrapper_dir: deployer
+        sudoer_username: root
+        connect_username: root
+        host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+        force_build: false
+        notification:
+          flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+        build:
+          dockerfile: 'deployer/docker/Dockerfile.build'
+          artifact_dir: target
+          build_dir: '.'
+          build_args: ''
+        unit_test:
+          dockerfile: 'deployer/docker/Dockerfile.test'
+          build_dir: '.'
+          build_args: ' --no-cache '
+        base_image:
+          force_build: false
+          dockerfile: 'deployer/docker/Dockerfile.baseImage'
+          build_dir: '.'
+          build_args: ''
+
+    vertica-onboarding:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: vertica_client_onboarding
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: ea649d46-4aa6-4c7f-a2d9-a91dd5ab056d
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    vertica-summary-lambda:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: vertica-summary-lambda
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''    
+
+    vertica-contact-insights:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: vertica-contact-insights
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''         
+
+    cpass-cache-manager:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: cpass-cache-manager
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 1ee09f9e-41e2-4f28-aa77-cbdaff94b124
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    mongo-segment:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: mongo-segment
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 3bbf27da-c2d6-4710-b62e-0f94ba244bdb			
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''  
+
+    geofence-reports-lambda:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: geofence-reports-lambda
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''        
+
+    onsite-engagement:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: onsite-engagement
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    goapiv3:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: goapiv3
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: devops
+      host_credential_id: 7b8aa79e-59ed-4dba-a0b6-807567e8fa4d
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''        
+
+    ramanlambda:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: raman-lambda
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+        
+    papi-ui:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: papi_ui
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+ 
+    remote-stm:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: remoteStm
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    vertica-event-deletion:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: vertica-event-deletion
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''       
+        
+    mongodatadeletion:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: mongo-data-deletion
+        api: api/v3    
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 796f2752-9511-4d4c-8f15-5d74ebcb6195
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    reachable-count-api:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: rechable_count_api
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: ea649d46-4aa6-4c7f-a2d9-a91dd5ab056d
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    verticaapi:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: verticaapi
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: '' 
+
+    behaviourdashboard:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: behaviour-dashboard
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    app-data-lambda:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: app-data-lambda
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    go-pnserver-lambda:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: go-pnserver-lambda
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    summarizer:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: Summarizer
+        api: api/v3    
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    lsweb-app:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: LSWebApp
+        api: api/v3    
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    deferreddequeuerch2:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: deferreddequeuerch2
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5fc4aea2-ec27-467d-a9af-0a2bd3f0a80c
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    deferredpublisherch2:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: deferredpublisherch2
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5fc4aea2-ec27-467d-a9af-0a2bd3f0a80c
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''  
+
+    lsloader:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: LSLoader
+        api: api/v3    
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: '' 
+
+    mongo-smartanalytics:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: mongo-smartanalytics
+        api: api/v3    
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: '' 
+
+    mongo-segmentation:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: Mongo-Segmentation
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    smartech-netbin:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: smartech_netbin
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    go-tracker:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: gotracking
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    offlineapi:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: OfflineApi
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 7b8aa79e-59ed-4dba-a0b6-807567e8fa4d
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    gopi:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: gopi
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: b482f37e-cf3d-4beb-be87-3b1292761278
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    webhook:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: webhook
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 7b8aa79e-59ed-4dba-a0b6-807567e8fa4d
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    goget-dataset:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: GoGetDataset
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: ca4dfdd3-477a-4772-bc87-602f9ec72af6
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    kafka-mongo-writer:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: kafkamongowriter
+        api: api/v3    
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    mongo-utils:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: mongo-utils
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    maucalc:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: MAUCalc
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    v-tracker:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: ltutv3
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: fa401864-ea5a-4fe3-bdb1-11b4086f28c7
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    link-tracker:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: link-track-user-track
+        api: api/v3
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    smartech-elements-ia2:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: smartech-elements-ia2
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    ampsubmission:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: AmpSubmission
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    aidelivery:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: aidelivery
+        api: api/v3    
+      credentials_id: git-cred of venkateshemandi
+      lang_type: scripted
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: fa401864-ea5a-4fe3-bdb1-11b4086f28c7
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: ''
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    sentry-pq-admin-lambdas:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: sentry-pq-admin-lambdas
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    sentry-targets-alert-lambda:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: sentry-targets-alert-lambda
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    sentry-targets-whatsapp-lambda:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: sentry-targets-whatsapp-lambda
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    sentry-lambdas-py:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: sentry-lambdas-py
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    sentry-pq-campaign-lambdas:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: sentry-pq-campaign-lambdas
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    sentry-pq-accessories-lambdas:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: sentry-pq-accessories-lambdas
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    sentry-streaming-feature-pods:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: sentry-streaming-feature-pods
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    sentry-support-scripts:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: sentry-support-scripts
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    geofenceapi:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: geoFenceApi
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 5c085d70-cec7-4270-8a9a-6972569832ae
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+    geofencelambda:
+      git:
+        server: https://gitlab.com/netcorecloud
+        branch: master
+        owner: cee
+        repo_name: geofence_lambda
+        api: api/v3      
+      credentials_id: git-cred of venkateshemandi
+      lang_type: compiled
+      app_type: core
+      wrapper_dir: deployer
+      sudoer_username: root
+      connect_username: root
+      host_credential_id: 82ebdb9d-273d-4fa3-98db-41db4366a974
+      force_build: false
+      notification:
+        flock_url: https://api.flock.com/hooks/sendMessage/4ee04954-1230-4231-b677-39abcd0e233d
+      build:
+        dockerfile: 'deployer/docker/Dockerfile.build'
+        artifact_dir: target
+        build_dir: '.'
+        build_args: '`eval "echo \--build-arg APP_COMMIT_ID=\\\$COMMIT_ID"`'
+      unit_test:
+        dockerfile: 'deployer/docker/Dockerfile.test'
+        build_dir: '.'
+        build_args: ' --no-cache '
+      base_image:
+        force_build: false
+        dockerfile: 'deployer/docker/Dockerfile.baseImage'
+        build_dir: '.'
+        build_args: ''
+
+
+###END OF FILE ####
